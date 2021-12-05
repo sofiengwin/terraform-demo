@@ -1,7 +1,9 @@
 terraform {
   backend "remote" {
+    organization = "better-bat"
+
     workspaces {
-      name = "Example"
+      name = "terraform-demo"
     }
   }
 
@@ -15,13 +17,24 @@ terraform {
   required_version = "~> 1.0.0"
 }
 
+variable "main_region" {
+  type    = string
+  default = "us-east-1"
+}
+
 provider "aws" {
   profile = "terraform"
-  region  = "us-east-1"
+  region  = var.main_region
+}
+
+module "vpc" {
+  source = "./modules/vpc"
+  region = var.main_region
 }
 
 resource "aws_instance" "app_server" {
-  ami           = "ami-061ac2e015473fbe2"
+  ami           = module.vpc.ami_id
+  subnet_id     = module.vpc.subnet_id
   instance_type = "t2.micro"
 
   tags = {
@@ -31,8 +44,8 @@ resource "aws_instance" "app_server" {
 
 variable "instance_name" {
   description = "Value of the name tag"
-  type = string
-  default = "ExampleAppServerInstance"
+  type        = string
+  default     = "ExampleAppServerInstance"
 }
 
 output "instance_id" {
